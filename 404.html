@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html style="height:100%">
 
 <head>
 	<meta charset='utf-8'>
@@ -11,6 +11,24 @@
 	<link rel="icon" href="/favicon.ico" />
 
 	<style>
+		.bg_404 {
+			/* The image used */
+			background-image: url("/background/404.jpg");
+
+			/* Full height */
+			height: 100%;
+
+			/* Center and scale the image nicely */
+			background-position: center;
+			background-repeat: no-repeat;
+			background-size: cover;
+		}
+
+		.body_404 {
+			height: 100%;
+			padding: 0;
+		}
+
 		/* In Page appearance order */
 		/* Theme Variables */
 		:root {
@@ -623,23 +641,13 @@
 		const newPostObserver = new IntersectionObserver((entries, observer) => {
 			for (const entry of entries) {
 				if (entry.isIntersecting) {
-					globalData.unreadPosts--;
+					if (globalData.unreadPosts) {
+						globalData.unreadPosts--;
+					}
 					observer.unobserve(entry.target);
 				}
 			}
 
-			if (globalData.unreadPosts) {
-				document.title = `(${globalData.unreadPosts}) ${globalData.originalTitle}`;
-			} else {
-				$(".thread .new-posts-line").remove();
-				document.title = globalData.originalTitle;
-				globalData.originalTitle = undefined;
-
-				if (globalData.originalFavicon) {
-					$('link[rel="icon"]').replaceWith(globalData.originalFavicon);
-					delete globalData.originalFavicon;
-				}
-			}
 		}, { threshold: 1.0 });
 
 		function imageUrl(id, imageData, thumb) {
@@ -841,6 +849,10 @@
 								.end()
 						)
 					$('.pages').removeClass('hidden').append(pageLinks)
+					data.page.flatMap((entry) => {
+						globalData.postIds.add(entry.thread.postNumber)
+						entry.posts.forEach(post => globalData.postIds.add(post.postNumber))
+					});
 					const threads = data.page.flatMap((entry) => {
 						const op = renderOP(entry.thread)
 						const posts = entry.posts.map(post => renderPost(post))
@@ -849,13 +861,9 @@
 							$('<div/>').addClass('divider'),
 							op,
 						]
-					}).slice(1)
-					$('#main').append(threads)
+					}).slice(1);
+					$('#main').append(threads);
 				})
-		}
-
-		function showNotFound() {
-
 		}
 
 		function renderPost(post) {
@@ -922,7 +930,7 @@
 			}).join("\r\n"));
 			container.find('.body').html(
 				container.find('.body').html().replace(
-					/\[spoiler\]([^<]*?)\[\/spoiler\]/,
+					/\[spoiler\]([^<]*?)\[\/spoiler\]/g,
 					'<span class="spoiler">$1</span>'
 				).replace(
 					/(https?:\/\/[^\s<,]+)/g,
@@ -1121,8 +1129,9 @@
 			return fetch(baseUrl + "bulletin/" + threadId, {
 				headers: authHeaders
 			})
-				.catch(() => showNotFound())
+				.catch(() => render404())
 				.then(body => body.json())
+				.catch(() => render404())
 				.then(data => {
 					globalData.lastPostNumber = data.posts.length && data.posts[data.posts.length - 1].postNumber;
 
@@ -1239,6 +1248,9 @@
 				.then(body => body.json())
 				.then(data => {
 					const divider = $('<div/>').addClass('divider')
+					data.posts.flatMap((entry) => {
+						globalData.postIds.add(entry.postNumber)
+					});
 					const threads = data.posts.flatMap((entry) => {
 						const op = renderOP(entry);
 						return [
@@ -1464,8 +1476,13 @@
 
 				const post = targetNumbers.parents('.content').first()
 				if (post.length) {
-					renderPreview(post.clone(), elem)
-					return
+					if(post.parent().hasClass('hidden')){
+						post.parent().parent()[0].removeChild(post.parent()[0]);
+						renderPreview(post, elem);
+						return;
+					}
+					renderPreview(post.clone(), elem);
+					return;
 				}
 
 				const thread = targetNumbers.parents('.thread').first()
@@ -1481,7 +1498,7 @@
 			$(document).on('mouseleave', '.reference', (e) => {
 				const elem = $(e.currentTarget)
 				globalData.referencePreview = false
-				elem.parent().find('.post-preview').remove()
+				elem.parent().find('.post-preview').addClass('hidden')
 			})
 
 			document.addEventListener('keyup', (e) => {
@@ -1507,9 +1524,21 @@
 				return;
 			}
 
-			loadIndex();
+			if (window.location.pathname === "/index" || window.location.pathname === ""){
+				loadIndex();
+				return;
+			}
+
+			render404();
 		});
+
+		function render404(){
+			document.getElementById("imageboard").classList.add("hidden");
+			document.getElementById("bg_404").classList.remove("hidden");
+			document.getElementsByTagName("body")[0].classList.add("body_404");
+		}
 	</script>
+	<div id="imageboard">
 	<div class="thread template">
 		<div class="meta">
 			<span>File:</span>
@@ -1708,6 +1737,11 @@
 			</div>
 		</form>
 	</div>
+	</div>
+	<div id="bg_404" class="bg_404 hidden"></div>
+	<noscript>
+		<div class="bg_404"></div>
+	</noscript>
 
 </body>
 
