@@ -370,6 +370,19 @@
 			content: url("boards/spoiler.jpeg");
 		}
 
+		.imageWrapper {
+			position: relative;
+		}
+
+		.birthdayHat {
+			position: absolute;
+			right: 32px;
+			top: -12px;
+			pointer-events: none;
+			width: 96px;
+			content: url("boards/hatx.png");
+		}
+
 		h1 {
 			margin-left: 40px;
 		}
@@ -635,6 +648,8 @@
 		const baseUrl = dev ? "http://localhost:9515/" : "https://riichi.moe/api/";
 		const imageBaseUrl = dev ? 'http://localhost:8080' : `${baseUrl}bulletin/images`
 		const maxFileSize = 1024 * 1024;
+		const now = new Date();
+		const isBirthday = now.getUTCMonth() === 3 && now.getUTCDate() === 28
 
 		const dayOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat"];
 
@@ -1068,7 +1083,7 @@
 			container.find('.meta a').attr('download', true)
 			container.find('.meta a').attr('filename', data.imageData.fileName)
 			container.find('.meta .data').text(`(${toReadableFileSize(data.imageData.fileSize)}, ${data.imageData.dimensions[0]}x${data.imageData.dimensions[1]})`)
-			const imageWrapper = $('<a>', { href: imageUrl(data._id, data.imageData), onclick: 'return false' })
+			const imageWrapper = $('<a>', { href: imageUrl(data._id, data.imageData), onclick: 'return false', class: 'imageWrapper' });
 			const image = $('<img>', { class: 'image thumb', src: imageUrl(data._id, data.imageData, true) });
 			if (data.imageData.thumbDimensions?.length && data.imageData.thumbDimensions[0] < 256 && data.imageData.thumbDimensions[1] < 256) {
 				image[0].setAttribute('width', data.imageData.thumbDimensions[0]);
@@ -1099,6 +1114,11 @@
 				$(this).attr('src', imageUrl(data._id, data.imageData, !expand));
 			});
 			image.appendTo(imageWrapper);
+
+			if (isBirthday) {
+				const birthdayHat = $('<img>', { class: 'birthdayHat' });
+				birthdayHat.appendTo(imageWrapper);
+			}
 
 			container.find('.meta').after(imageWrapper);
 		}
@@ -1318,6 +1338,12 @@
 		}
 
 		$(() => {
+			if (isBirthday) {
+				const birthdayAnnouncement = $('<h3>', { style: "color: red" })
+					.text("Happy Birthday, 4han!")
+					.appendTo($('.announcements'))
+			}
+
 			$('form').trigger('reset')
 			$('input[type=checkbox]').prop('checked', false);
 			$('.form.floating .x').on('click', () => $('.form.floating').addClass('hidden'))
@@ -1615,19 +1641,12 @@
 	<div class="banner">
 		<div class="title"><a href="/">4han</a></div>
 		<img class="bannerImage">
-		<div>[<a href="https://repo.riichi.moe/index2.html" class="repo">
-				<h3>Repo Here</h3>
-			</a>]</div>
+		<div>
+			[<a href="https://repo.riichi.moe/" class="repo">
+				<h3>Repo</h3>
+			</a>]
+		</div>
 		<div class="announcements">
-			<h1>The future of 4han</h1>
-			<div>Thank you all the anons who helped write this site. Archive anon, frontend anons, banner anons,
-				repomaid in chief et al.</div>
-			<h2>4han will continue</h2>
-			<div>I'm not deleting a perfectly working site that everyone put their effort in.</div>
-			<div>Especially considering 4chan could still have a second tragic accident.</div>
-			<div>However the repo.riichi.moe domain should be returned to the repo.</div>
-			<h2>You can now browse <a href="https://4han.moe">4han.moe</a> at your leisure.</h2>
-			<div>I leave it to the repomaids to choose when to restore the repo.</div>
 		</div>
 		<div class="form top">
 			<form>
